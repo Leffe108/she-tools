@@ -6,26 +6,26 @@ The CSV file contains a subset of all data in the XML file.
 Written 2020 Leif Linse
 Python: 3.8.5. Developed on Windows 10
 """
-from xml.dom.minidom import parse, parseString, Element
+from xml.dom.minidom import parse, Element
+from typing import List
 import sys
 import os
 import csv
 import math
 import datetime
 import dateutil.parser
-from typing import List
 
-def findall(node : Element, node_name : str) -> List:
+def findall(node: Element, node_name: str) -> List:
     """Find all DOM elements from node by node name"""
     return node.getElementsByTagName(node_name)
 
-def find(node : Element, node_name : str) -> [Element,None]:
+def find(node: Element, node_name: str) -> [Element, None]:
     """Find first DOM element from node by node name"""
     r = findall(node, node_name)
     if len(r) == 0:
         return None
     return r[0]
-def get_inner_text(node : [Element,None]) -> str:
+def get_inner_text(node: [Element, None]) -> str:
     """
     From an element eg. <Given>Family Name</Given>
     return the inner text 'Family Name'
@@ -33,17 +33,17 @@ def get_inner_text(node : [Element,None]) -> str:
     if node is None or not node.hasChildNodes():
         return ''
     return node.childNodes[0].data
-def to_int(s : str) -> [int,None]:
+def to_int(s: str) -> [int, None]:
     """Convert string to int|None"""
     if s == '':
         return None
     return int(s, 10)
-def to_s(value : [int,None]) -> str:
+def to_s(value: [int, None]) -> str:
     """Convert int|None to string"""
     if value is None:
         return ''
     return str(value)
-def name_to_str(name : Element) -> str:
+def name_to_str(name: Element) -> str:
     """
     Read Given and Family name from name Element
     and return a string.
@@ -56,7 +56,7 @@ def name_to_str(name : Element) -> str:
     if family is not None and family.hasChildNodes():
         name_parts.append(get_inner_text(family))
     return ' '.join(name_parts)
-def human_time(time : int) -> str:
+def human_time(time: int) -> str:
     """
     Convert time in seconds to format [hh:]:mm:ss
     where hour part is ommitted if it is zero.
@@ -79,23 +79,28 @@ def iso_time_to_date_time(iso_time) -> List[str]:
     return dateutil.parser.isoparse(iso_time)
 
 
-def parse_xml(file_name : str) -> List: 
+def print_class_info(class_result: Element) -> None:
     """
-    Parse IOF XML ResultList file to Python data structure
+    Print class id, name and course name to console
     """
-
-    dom = parse(file_name)
-
-    class_result = dom.getElementsByTagName('ClassResult')[0]
     cls = find(class_result, 'Class')
     class_id = get_inner_text(find(cls, 'Id'))
     class_name = get_inner_text(find(cls, 'Name'))
     course = find(class_result, 'Course')
     course_name = get_inner_text(find(course, 'Name'))
-
     print('Class id: ' + class_id)
     print('Class name: ' + class_name)
     print('Course name: ' + course_name)
+
+
+def parse_xml(file_name: str) -> List:
+    """
+    Parse IOF XML ResultList file to Python data structure
+    """
+    dom = parse(file_name)
+
+    class_result = dom.getElementsByTagName('ClassResult')[0]
+    print_class_info(class_result)
 
     persons = findall(class_result, 'PersonResult')
 
@@ -126,7 +131,7 @@ def parse_xml(file_name : str) -> List:
     return data
 
 
-def format_split_times(split_times : List) -> str:
+def format_split_times(split_times: List) -> str:
     """
     Format split times list to string
     <control code>: time, <control code>: time, ...
@@ -134,7 +139,7 @@ def format_split_times(split_times : List) -> str:
     return ', '.join([to_s(st['control_code']) + ': ' + to_s(st['time']) for st in split_times])
 
 
-def control_str(split_times : List) -> str:
+def control_str(split_times: List) -> str:
     """
     Create comma separated list of visited control codes from
     split_times data. (ommits time)
@@ -144,7 +149,7 @@ def control_str(split_times : List) -> str:
     return ', '.join([to_s(st['control_code']) for st in split_times])
 
 
-def csv_out(file_name : str, data : List) -> None:
+def csv_out(file_name: str, data: List) -> None:
     """
     Produces CSV file from parse_csv data
 
@@ -153,9 +158,19 @@ def csv_out(file_name : str, data : List) -> None:
     f = open(file_name, 'w', newline='')
     w = csv.writer(f, dialect='excel-variant')
 
-    w.writerow(['Position', 'Name', 'Time', 'Status', 'Controls', 'Split Times', 'Start Date', 'Start Time'])
+    w.writerow([
+        'Position',
+        'Name',
+        'Time',
+        'Status',
+        'Controls',
+        'Split Times',
+        'Start Date',
+        'Start Time',
+    ])
     for person in data:
-        start_dt = person['start_datetime'].astimezone(datetime.timezone(datetime.timedelta(hours=2), 'CEST'))
+        start_dt = person['start_datetime']
+        start_dt = start_dt.astimezone(datetime.timezone(datetime.timedelta(hours=2), 'CEST'))
         w.writerow([
             to_s(person['position']),
             person['name'],
@@ -166,7 +181,6 @@ def csv_out(file_name : str, data : List) -> None:
             start_dt.date().isoformat(),
             start_dt.time().isoformat(timespec='seconds'),
         ])
-    f.close
 
 
 # -- Main ---
