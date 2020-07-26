@@ -11,6 +11,8 @@ import sys
 import os
 import csv
 import math
+import datetime
+import dateutil.parser
 from typing import List
 
 def findall(node : Element, node_name : str) -> List:
@@ -54,7 +56,6 @@ def name_to_str(name : Element) -> str:
     if family is not None and family.hasChildNodes():
         name_parts.append(get_inner_text(family))
     return ' '.join(name_parts)
-
 def human_time(time : int) -> str:
     """
     Convert time in seconds to format [hh:]:mm:ss
@@ -70,6 +71,12 @@ def human_time(time : int) -> str:
     r += str.zfill(m, 2) + ':' + str.zfill(s, 2)
 
     return r
+def iso_time_to_date_time(iso_time) -> List[str]:
+    """
+    Convert ISO 8601 time to datetime object
+    """
+    print('iso time: ' + iso_time)
+    return dateutil.parser.isoparse(iso_time)
 
 
 def parse_xml(file_name : str) -> List: 
@@ -100,6 +107,8 @@ def parse_xml(file_name : str) -> List:
         r['name'] = name_to_str(find(p, 'Name'))
         result = find(p_result, 'Result')
         r['time'] = to_int(get_inner_text(find(result, 'Time')))
+        r['start_datetime'] = iso_time_to_date_time(get_inner_text(find(result, 'StartTime')))
+        r['finish_datetime'] = iso_time_to_date_time(get_inner_text(find(result, 'FinishTime')))
         r['position'] = to_int(get_inner_text(find(result, 'Position')))
         r['status'] = get_inner_text(find(result, 'Status'))
         r['split_times'] = []
@@ -138,12 +147,15 @@ def control_str(split_times : List) -> str:
 def csv_out(file_name : str, data : List) -> None:
     """
     Produces CSV file from parse_csv data
+
+    Start date/time is in CEST (UTC + 2)
     """
     f = open(file_name, 'w', newline='')
     w = csv.writer(f, dialect='excel-variant')
 
-    w.writerow(['Position', 'Name', 'Time', 'Status', 'Controls', 'Split Times'])
+    w.writerow(['Position', 'Name', 'Time', 'Status', 'Controls', 'Split Times', 'Start Date', 'Start Time'])
     for person in data:
+        start_dt = person['start_datetime'].astimezone(datetime.timezone(datetime.timedelta(hours=2), 'CEST'))
         w.writerow([
             to_s(person['position']),
             person['name'],
@@ -151,6 +163,8 @@ def csv_out(file_name : str, data : List) -> None:
             person['status'],
             control_str(person['split_times']),
             format_split_times(person['split_times']),
+            start_dt.date().isoformat(),
+            start_dt.time().isoformat(timespec='seconds'),
         ])
     f.close
 
