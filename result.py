@@ -110,6 +110,11 @@ def parse_xml(file_name: str) -> List:
         r = {}
 
         r['name'] = name_to_str(find(p, 'Name'))
+        r['team'] = ''
+        org = find(p_result, 'Organisation')
+        if org is not None:
+            print(r['name'] + ' has org')
+            r['team'] = get_inner_text(find(org, 'Name'))
         result = find(p_result, 'Result')
         r['time'] = to_int(get_inner_text(find(result, 'Time')))
         r['start_datetime'] = iso_time_to_date_time(get_inner_text(find(result, 'StartTime')))
@@ -161,6 +166,7 @@ def csv_out(file_name: str, data: List) -> None:
     w.writerow([
         'Position',
         'Name',
+        'Team',
         'Time',
         'Status',
         'Controls',
@@ -174,6 +180,7 @@ def csv_out(file_name: str, data: List) -> None:
         w.writerow([
             to_s(person['position']),
             person['name'],
+            person['team'],
             to_s(person['time']),
             person['status'],
             control_str(person['split_times']),
