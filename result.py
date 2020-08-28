@@ -7,7 +7,7 @@ Written 2020 Leif Linse
 Python: 3.8.5. Developed on Windows 10
 """
 from xml.dom.minidom import parse, Element
-from typing import List
+from typing import List,Union
 import sys
 import os
 import csv
@@ -71,11 +71,13 @@ def human_time(time: int) -> str:
     r += str.zfill(m, 2) + ':' + str.zfill(s, 2)
 
     return r
-def iso_time_to_date_time(iso_time) -> List[str]:
+def iso_time_to_date_time(iso_time: str) -> Union[datetime.datetime,None]:
     """
     Convert ISO 8601 time to datetime object
     """
     print('iso time: ' + iso_time)
+    if iso_time == '':
+        return None
     return dateutil.parser.isoparse(iso_time)
 
 
@@ -176,7 +178,8 @@ def csv_out(file_name: str, data: List) -> None:
     ])
     for person in data:
         start_dt = person['start_datetime']
-        start_dt = start_dt.astimezone(datetime.timezone(datetime.timedelta(hours=2), 'CEST'))
+        if start_dt is not None:
+            start_dt = start_dt.astimezone(datetime.timezone(datetime.timedelta(hours=2), 'CEST'))
         w.writerow([
             to_s(person['position']),
             person['name'],
@@ -185,8 +188,8 @@ def csv_out(file_name: str, data: List) -> None:
             person['status'],
             control_str(person['split_times']),
             format_split_times(person['split_times']),
-            start_dt.date().isoformat(),
-            start_dt.time().isoformat(timespec='seconds'),
+            start_dt.date().isoformat() if start_dt is not None else '',
+            start_dt.time().isoformat(timespec='seconds') if start_dt is not None else '',
         ])
 
 
