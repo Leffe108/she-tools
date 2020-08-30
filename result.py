@@ -52,9 +52,9 @@ def name_to_str(name: Element) -> str:
     given = find(name, 'Given')
     family = find(name, 'Family')
     if given is not None and given.hasChildNodes():
-        name_parts.append(get_inner_text(given))
+        name_parts.append(get_inner_text(given).strip())
     if family is not None and family.hasChildNodes():
-        name_parts.append(get_inner_text(family))
+        name_parts.append(get_inner_text(family).strip())
     return ' '.join(name_parts)
 def human_time(time: int) -> str:
     """
@@ -116,7 +116,7 @@ def parse_xml(file_name: str) -> List:
         org = find(p_result, 'Organisation')
         if org is not None:
             print(r['name'] + ' has org')
-            r['team'] = get_inner_text(find(org, 'Name'))
+            r['team'] = get_inner_text(find(org, 'Name')).strip()
         result = find(p_result, 'Result')
         r['time'] = to_int(get_inner_text(find(result, 'Time')))
         r['start_datetime'] = iso_time_to_date_time(get_inner_text(find(result, 'StartTime')))
